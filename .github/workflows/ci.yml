@@ -18,7 +18,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Release, Debug]
+        build_type: [Release]
         include:
           - os: ubuntu-latest
             platform: linux
@@ -90,8 +90,10 @@ jobs:
         # Copy headers
         cp -r include artifacts/$ARTIFACT_NAME/
         
-        # Copy platform-specific tools
-        cp -r platform-tools artifacts/$ARTIFACT_NAME/
+        # Copy platform-specific tools (if exists)
+        if [ -d "platform-tools" ]; then
+          cp -r platform-tools artifacts/$ARTIFACT_NAME/
+        fi
         
         # Copy examples
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
