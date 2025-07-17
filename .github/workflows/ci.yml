@@ -1,0 +1,168 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release, Debug]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            executable_suffix: ""
+          - os: windows-latest
+            platform: windows
+            executable_suffix: ".exe"
+          - os: macos-latest
+            platform: macos
+            executable_suffix: ""
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install CMake (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential
+
+    - name: Install CMake (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake
+
+    - name: Setup MSVC (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Create Build Directory
+      run: mkdir build
+
+    - name: Configure CMake
+      run: |
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_EXAMPLES=ON ..
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config ${{ matrix.build_type }}
+
+    - name: Test Examples Exist
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          EXAMPLES_DIR="build/examples/${{ matrix.build_type }}"
+        else
+          EXAMPLES_DIR="build/examples"
+        fi
+        
+        echo "Checking for examples in: $EXAMPLES_DIR"
+        ls -la "$EXAMPLES_DIR" || echo "Examples directory not found"
+        
+        # Check if at least one example exists
+        if ls "$EXAMPLES_DIR"/*example* 1> /dev/null 2>&1; then
+          echo "✓ Examples built successfully"
+        else
+          echo "✗ No examples found"
+          exit 1
+        fi
+
+    - name: Package Artifacts
+      shell: bash
+      run: |
+        ARTIFACT_NAME="questadblib-${{ matrix.platform }}-${{ matrix.build_type }}"
+        mkdir -p artifacts/$ARTIFACT_NAME
+        
+        # Copy headers
+        cp -r include artifacts/$ARTIFACT_NAME/
+        
+        # Copy platform-specific tools
+        cp -r platform-tools artifacts/$ARTIFACT_NAME/
+        
+        # Copy examples
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cp -r build/examples/${{ matrix.build_type }} artifacts/$ARTIFACT_NAME/examples
+        else
+          cp -r build/examples artifacts/$ARTIFACT_NAME/
+        fi
+        
+        # Copy build scripts
+        cp build.sh artifacts/$ARTIFACT_NAME/ 2>/dev/null || true
+        cp build.bat artifacts/$ARTIFACT_NAME/ 2>/dev/null || true
+        
+        # Copy documentation
+        cp README.md artifacts/$ARTIFACT_NAME/ 2>/dev/null || true
+        cp CLAUDE.md artifacts/$ARTIFACT_NAME/ 2>/dev/null || true
+        
+        # Create archive
+        cd artifacts
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          7z a "$ARTIFACT_NAME.zip" "$ARTIFACT_NAME"
+        else
+          tar -czf "$ARTIFACT_NAME.tar.gz" "$ARTIFACT_NAME"
+        fi
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: questadblib-${{ matrix.platform }}-${{ matrix.build_type }}
+        path: artifacts/questadblib-${{ matrix.platform }}-${{ matrix.build_type }}*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Display structure of downloaded files
+      run: ls -la artifacts/
+
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/**/*.zip
+          artifacts/**/*.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential clang-format clang-tidy
+    
+    - name: Check code formatting
+      run: |
+        find src include -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+    
+    - name: Run static analysis
+      run: |
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+        cd ..
+        find src -name "*.cpp" | xargs clang-tidy -p build/

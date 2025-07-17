@@ -1,0 +1,194 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+
+# Visual Studio files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.filters
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+*.stamp
+*.stamp.depend
+*.dir/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.ko
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.ilk
+*.tlog/
+
+# Qt-es
+object_script.*.Release
+object_script.*.Debug
+*_plugin_import.cpp
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jsc
+Makefile*
+*build-*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# IDE files
+*.cbp
+*.layout
+*.depend
+*.workspace
+*.project
+*.cproject
+*.settings/
+
+# Package files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Test and coverage files
+*.gcov
+*.gcda
+*.gcno
+coverage/
+*.info
+
+# Doxygen
+doc/
+docs/html/
+docs/latex/
+
+# Clang
+.clang_complete
+.clang-format
+.clang-tidy
+
+# JetBrains
+.idea/
+cmake-build-*/
+
+# Conan
+conanfile.txt
+conandata.yml
+test_package/
+*.pyc
+
+# vcpkg
+vcpkg_installed/
+.vcpkg-root
+
+# Custom ignore patterns for this project
+# Platform-tools should not be bundled (Google's licensing)
+platform-tools/
+# Keep examples source files but ignore build artifacts
+examples/Debug/
+examples/Release/
+examples/CMakeFiles/
+examples/*.vcxproj
+examples/*.vcxproj.filters
+examples/*.dir/
+examples/cmake_install.cmake
+examples/INSTALL.vcxproj*
+
+# Ignore nul file (seems to be a Windows artifact)
+nul
