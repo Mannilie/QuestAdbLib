@@ -7,9 +7,11 @@
 #include <regex>
 #include <sstream>
 
+using namespace std;
+
 namespace QuestAdbLib {
 
-    AdbDevice::AdbDevice(const std::string& deviceId, std::shared_ptr<AdbCommand> adbCommand)
+    AdbDevice::AdbDevice(const string& deviceId, shared_ptr<AdbCommand> adbCommand)
         : deviceId_(deviceId), adbCommand_(adbCommand) {}
 
     AdbDevice::~AdbDevice() = default;
@@ -35,12 +37,12 @@ namespace QuestAdbLib {
             info.runningApps = appsResult.value;
         }
 
-        info.lastUpdated = std::chrono::system_clock::now();
+        info.lastUpdated = chrono::system_clock::now();
 
         return Result<DeviceInfo>::Success(info);
     }
 
-    Result<std::string> AdbDevice::getModel() {
+    Result<string> AdbDevice::getModel() {
         return adbCommand_->shell(deviceId_, "getprop ro.product.model", true);
     }
 
@@ -50,16 +52,16 @@ namespace QuestAdbLib {
             return Result<int>::Error(result.error);
         }
 
-        std::regex batteryRegex(R"(level: (\d+))");
-        std::smatch match;
-        if (std::regex_search(result.value, match, batteryRegex)) {
-            return Result<int>::Success(std::stoi(match[1].str()));
+        regex batteryRegex(R"(level: (\d+))");
+        smatch match;
+        if (regex_search(result.value, match, batteryRegex)) {
+            return Result<int>::Success(stoi(match[1].str()));
         }
 
         return Result<int>::Error("Could not parse battery level");
     }
 
-    Result<std::vector<std::string>> AdbDevice::getRunningApps() {
+    Result<vector<string>> AdbDevice::getRunningApps() {
         return adbCommand_->getRunningProcesses(deviceId_);
     }
 
@@ -112,41 +114,41 @@ namespace QuestAdbLib {
         return Result<bool>::Success(allSuccess);
     }
 
-    Result<std::string> AdbDevice::shell(const std::string& command, bool capture) {
+    Result<string> AdbDevice::shell(const string& command, bool capture) {
         return adbCommand_->shell(deviceId_, command, capture);
     }
 
-    Result<bool> AdbDevice::setProperty(const std::string& property, const std::string& value) {
+    Result<bool> AdbDevice::setProperty(const string& property, const string& value) {
         auto result = shell("setprop " + property + " " + value);
         return Result<bool>::Success(result.success);
     }
 
-    Result<std::string> AdbDevice::getProperty(const std::string& property) {
+    Result<string> AdbDevice::getProperty(const string& property) {
         return shell("getprop " + property, true);
     }
 
-    Result<bool> AdbDevice::pushFile(const std::string& localPath, const std::string& remotePath) {
+    Result<bool> AdbDevice::pushFile(const string& localPath, const string& remotePath) {
         return adbCommand_->push(deviceId_, localPath, remotePath);
     }
 
-    Result<bool> AdbDevice::pullFile(const std::string& remotePath, const std::string& localPath) {
+    Result<bool> AdbDevice::pullFile(const string& remotePath, const string& localPath) {
         return adbCommand_->pull(deviceId_, remotePath, localPath);
     }
 
-    Result<bool> AdbDevice::removeFile(const std::string& remotePath) {
-        std::string quotedPath = Utils::quoteStringIfNeeded(remotePath);
+    Result<bool> AdbDevice::removeFile(const string& remotePath) {
+        string quotedPath = Utils::quoteStringIfNeeded(remotePath);
         auto result = shell("rm -f " + quotedPath);
         return Result<bool>::Success(result.success);
     }
 
-    Result<bool> AdbDevice::fileExists(const std::string& remotePath) {
-        std::string quotedPath = Utils::quoteStringIfNeeded(remotePath);
+    Result<bool> AdbDevice::fileExists(const string& remotePath) {
+        string quotedPath = Utils::quoteStringIfNeeded(remotePath);
         auto result = shell("ls " + quotedPath, true);
         return Result<bool>::Success(result.success &&
-                                     result.value.find("No such file") == std::string::npos);
+                                     result.value.find("No such file") == string::npos);
     }
 
-    Result<bool> AdbDevice::sendBroadcast(const std::string& action, const std::string& component) {
+    Result<bool> AdbDevice::sendBroadcast(const string& action, const string& component) {
         return adbCommand_->broadcast(deviceId_, action, component);
     }
 
@@ -185,83 +187,83 @@ namespace QuestAdbLib {
         disableCsvMetrics();
 
         // Remove old CSV files
-        std::string command = "rm -f \"" + std::string(DEVICE_METRICS_PATH) + "/*.csv\"";
+        string command = "rm -f \"" + string(DEVICE_METRICS_PATH) + "/*.csv\"";
         auto result = shell(command);
 
         return Result<bool>::Success(result.success);
     }
 
-    Result<std::vector<std::string>> AdbDevice::getMetricsFiles() {
-        std::string command = "ls \"" + std::string(DEVICE_METRICS_PATH) + "\"";
+    Result<vector<string>> AdbDevice::getMetricsFiles() {
+        string command = "ls \"" + string(DEVICE_METRICS_PATH) + "\"";
         auto result = shell(command, true);
 
         if (!result.success) {
-            return Result<std::vector<std::string>>::Error(result.error);
+            return Result<vector<string>>::Error(result.error);
         }
 
-        std::vector<std::string> csvFiles;
+        vector<string> csvFiles;
         auto lines = Utils::split(result.value, '\n');
 
         for (const auto& line : lines) {
-            std::string filename = Utils::trim(line);
-            if (!filename.empty() && filename.find(".csv") != std::string::npos &&
-                filename.find("No such file") == std::string::npos) {
+            string filename = Utils::trim(line);
+            if (!filename.empty() && filename.find(".csv") != string::npos &&
+                filename.find("No such file") == string::npos) {
                 csvFiles.push_back(filename);
             }
         }
 
-        return Result<std::vector<std::string>>::Success(csvFiles);
+        return Result<vector<string>>::Success(csvFiles);
     }
 
-    Result<std::string> AdbDevice::pullLatestMetrics(const std::string& localDirectory) {
+    Result<string> AdbDevice::pullLatestMetrics(const string& localDirectory) {
         auto filesResult = getMetricsFiles();
         if (!filesResult.success) {
-            return Result<std::string>::Error(filesResult.error);
+            return Result<string>::Error(filesResult.error);
         }
 
         if (filesResult.value.empty()) {
-            return Result<std::string>::Error("No metrics files found on device");
+            return Result<string>::Error("No metrics files found on device");
         }
 
         // Get the latest file (assuming they're sorted alphabetically/chronologically)
-        std::vector<std::string> files = filesResult.value;
-        std::sort(files.begin(), files.end());
-        std::string latestFile = files.back();
+        vector<string> files = filesResult.value;
+        sort(files.begin(), files.end());
+        string latestFile = files.back();
 
         // Generate local filename with timestamp
-        auto now = std::chrono::system_clock::now();
-        auto time_t = std::chrono::system_clock::to_time_t(now);
-        std::stringstream ss;
-        ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H-%M-%S");
+        auto now = chrono::system_clock::now();
+        auto time_t = chrono::system_clock::to_time_t(now);
+        stringstream ss;
+        ss << put_time(gmtime(&time_t), "%Y-%m-%dT%H-%M-%S");
 
-        std::string localFilename = "metrics_" + deviceId_ + "_" + ss.str() + ".csv";
-        std::string localPath = Utils::joinPath(localDirectory, localFilename);
+        string localFilename = "metrics_" + deviceId_ + "_" + ss.str() + ".csv";
+        string localPath = Utils::joinPath(localDirectory, localFilename);
 
         // Create directory if it doesn't exist
-        std::filesystem::create_directories(localDirectory);
+        filesystem::create_directories(localDirectory);
 
         // Pull the file
-        std::string remotePath = std::string(DEVICE_METRICS_PATH) + "/" + latestFile;
+        string remotePath = string(DEVICE_METRICS_PATH) + "/" + latestFile;
         auto pullResult = pullFile(remotePath, localPath);
 
         if (!pullResult.success) {
-            return Result<std::string>::Error("Failed to pull metrics file");
+            return Result<string>::Error("Failed to pull metrics file");
         }
 
         // Verify file was pulled successfully
         if (!Utils::fileExists(localPath)) {
-            return Result<std::string>::Error("Failed to pull metrics file from device");
+            return Result<string>::Error("Failed to pull metrics file from device");
         }
 
-        return Result<std::string>::Success(localPath);
+        return Result<string>::Success(localPath);
     }
 
     Result<bool> AdbDevice::setCpuLevel(int level) {
-        return setProperty("debug.oculus.cpuLevel", std::to_string(level));
+        return setProperty("debug.oculus.cpuLevel", to_string(level));
     }
 
     Result<bool> AdbDevice::setGpuLevel(int level) {
-        return setProperty("debug.oculus.gpuLevel", std::to_string(level));
+        return setProperty("debug.oculus.gpuLevel", to_string(level));
     }
 
     Result<bool> AdbDevice::disableProximity() {
@@ -292,24 +294,24 @@ namespace QuestAdbLib {
                              METRICS_SERVICE_COMPONENT);
     }
 
-    Result<bool> AdbDevice::isAppRunning(const std::string& packageName) {
+    Result<bool> AdbDevice::isAppRunning(const string& packageName) {
         auto result = getRunningApps();
         if (!result.success) {
             return Result<bool>::Error(result.error);
         }
 
-        auto it = std::find(result.value.begin(), result.value.end(), packageName);
+        auto it = find(result.value.begin(), result.value.end(), packageName);
         return Result<bool>::Success(it != result.value.end());
     }
 
-    Result<bool> AdbDevice::hasMetricsTriggerApps(const std::vector<std::string>& triggerApps) {
+    Result<bool> AdbDevice::hasMetricsTriggerApps(const vector<string>& triggerApps) {
         auto result = getRunningApps();
         if (!result.success) {
             return Result<bool>::Error(result.error);
         }
 
         for (const auto& app : result.value) {
-            if (std::find(triggerApps.begin(), triggerApps.end(), app) != triggerApps.end()) {
+            if (find(triggerApps.begin(), triggerApps.end(), app) != triggerApps.end()) {
                 return Result<bool>::Success(true);
             }
         }

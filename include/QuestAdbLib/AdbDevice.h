@@ -7,19 +7,21 @@
 #include <memory>
 #include <string>
 
+using namespace std;
+
 namespace QuestAdbLib {
 
     class QUESTADBLIB_API AdbDevice {
       public:
-        AdbDevice(const std::string& deviceId, std::shared_ptr<AdbCommand> adbCommand);
+        AdbDevice(const string& deviceId, shared_ptr<AdbCommand> adbCommand);
         ~AdbDevice();
 
         // Device information
-        const std::string& getDeviceId() const { return deviceId_; }
+        const string& getDeviceId() const { return deviceId_; }
         Result<DeviceInfo> getDeviceInfo();
-        Result<std::string> getModel();
+        Result<string> getModel();
         Result<int> getBatteryLevel();
-        Result<std::vector<std::string>> getRunningApps();
+        Result<vector<string>> getRunningApps();
 
         // Device control
         Result<bool> reboot();
@@ -27,25 +29,25 @@ namespace QuestAdbLib {
         Result<bool> applyConfiguration(const HeadsetConfig& config);
 
         // Shell operations
-        Result<std::string> shell(const std::string& command, bool capture = true);
-        Result<bool> setProperty(const std::string& property, const std::string& value);
-        Result<std::string> getProperty(const std::string& property);
+        Result<string> shell(const string& command, bool capture = true);
+        Result<bool> setProperty(const string& property, const string& value);
+        Result<string> getProperty(const string& property);
 
         // File operations
-        Result<bool> pushFile(const std::string& localPath, const std::string& remotePath);
-        Result<bool> pullFile(const std::string& remotePath, const std::string& localPath);
-        Result<bool> removeFile(const std::string& remotePath);
-        Result<bool> fileExists(const std::string& remotePath);
+        Result<bool> pushFile(const string& localPath, const string& remotePath);
+        Result<bool> pullFile(const string& remotePath, const string& localPath);
+        Result<bool> removeFile(const string& remotePath);
+        Result<bool> fileExists(const string& remotePath);
 
         // Broadcasting
-        Result<bool> sendBroadcast(const std::string& action, const std::string& component = "");
+        Result<bool> sendBroadcast(const string& action, const string& component = "");
 
         // Metrics operations
         Result<bool> startMetricsRecording();
         Result<bool> stopMetricsRecording();
         Result<bool> clearMetricsFiles();
-        Result<std::vector<std::string>> getMetricsFiles();
-        Result<std::string> pullLatestMetrics(const std::string& localDirectory);
+        Result<vector<string>> getMetricsFiles();
+        Result<string> pullLatestMetrics(const string& localDirectory);
 
         // VR-specific operations
         Result<bool> setCpuLevel(int level);
@@ -58,12 +60,12 @@ namespace QuestAdbLib {
         Result<bool> disableCsvMetrics();
 
         // Process management
-        Result<bool> isAppRunning(const std::string& packageName);
-        Result<bool> hasMetricsTriggerApps(const std::vector<std::string>& triggerApps);
+        Result<bool> isAppRunning(const string& packageName);
+        Result<bool> hasMetricsTriggerApps(const vector<string>& triggerApps);
 
       private:
-        std::string deviceId_;
-        std::shared_ptr<AdbCommand> adbCommand_;
+        string deviceId_;
+        shared_ptr<AdbCommand> adbCommand_;
 
         static constexpr const char* DEVICE_METRICS_PATH =
             "/sdcard/Android/data/com.oculus.ovrmonitormetricsservice/files/CapturedMetrics";

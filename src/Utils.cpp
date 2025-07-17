@@ -14,15 +14,17 @@
 #include <unistd.h>
 #endif
 
+using namespace std;
+
 namespace QuestAdbLib {
     namespace Utils {
 
-        std::vector<std::string> split(const std::string& str, char delimiter) {
-            std::vector<std::string> tokens;
-            std::stringstream ss(str);
-            std::string token;
+        vector<string> split(const string& str, char delimiter) {
+            vector<string> tokens;
+            stringstream ss(str);
+            string token;
 
-            while (std::getline(ss, token, delimiter)) {
+            while (getline(ss, token, delimiter)) {
                 if (!token.empty()) {
                     tokens.push_back(token);
                 }
@@ -31,9 +33,9 @@ namespace QuestAdbLib {
             return tokens;
         }
 
-        std::string trim(const std::string& str) {
+        string trim(const string& str) {
             auto start = str.find_first_not_of(" \t\r\n");
-            if (start == std::string::npos) {
+            if (start == string::npos) {
                 return "";
             }
 
@@ -41,13 +43,13 @@ namespace QuestAdbLib {
             return str.substr(start, end - start + 1);
         }
 
-        bool fileExists(const std::string& path) { return std::filesystem::exists(path); }
+        bool fileExists(const string& path) { return filesystem::exists(path); }
 
-        std::string getCurrentExecutablePath() {
+        string getCurrentExecutablePath() {
 #ifdef _WIN32
             char buffer[MAX_PATH];
             GetModuleFileNameA(NULL, buffer, MAX_PATH);
-            return std::string(buffer);
+            return string(buffer);
 #else
             char buffer[1024];
             ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
@@ -55,26 +57,26 @@ namespace QuestAdbLib {
                 return "";
             }
             buffer[count] = '\0';
-            return std::string(buffer);
+            return string(buffer);
 #endif
         }
 
-        std::string getDirectoryFromPath(const std::string& path) {
-            return std::filesystem::path(path).parent_path().string();
+        string getDirectoryFromPath(const string& path) {
+            return filesystem::path(path).parent_path().string();
         }
 
-        std::string joinPath(const std::string& path1, const std::string& path2) {
-            return (std::filesystem::path(path1) / path2).string();
+        string joinPath(const string& path1, const string& path2) {
+            return (filesystem::path(path1) / path2).string();
         }
 
-        std::string quoteStringIfNeeded(const std::string& str) {
-            if (str.find(' ') != std::string::npos) {
+        string quoteStringIfNeeded(const string& str) {
+            if (str.find(' ') != string::npos) {
                 return "\"" + str + "\"";
             }
             return str;
         }
 
-        ProcessResult executeCommand(const std::string& command, int timeoutSeconds,
+        ProcessResult executeCommand(const string& command, int timeoutSeconds,
                                      ProgressCallback progressCallback) {
             ProcessResult result;
             result.success = false;
@@ -109,7 +111,7 @@ namespace QuestAdbLib {
             siStartInfo.hStdOutput = hChildStd_OUT_Wr;
             siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-            std::string cmdLine = "cmd.exe /c " + command;
+            string cmdLine = "cmd.exe /c " + command;
 
             BOOL bSuccess = CreateProcessA(NULL, const_cast<char*>(cmdLine.c_str()), NULL, NULL,
                                            TRUE, 0, NULL, NULL, &siStartInfo, &piProcInfo);
@@ -223,13 +225,13 @@ namespace QuestAdbLib {
             return result;
         }
 
-        std::string getEnvironmentVariable(const std::string& name) {
-            const char* value = std::getenv(name.c_str());
-            return value ? std::string(value) : std::string();
+        string getEnvironmentVariable(const string& name) {
+            const char* value = getenv(name.c_str());
+            return value ? string(value) : string();
         }
 
-        std::string getCurrentWorkingDirectory() {
-            return std::filesystem::current_path().string();
+        string getCurrentWorkingDirectory() {
+            return filesystem::current_path().string();
         }
 
     } // namespace Utils

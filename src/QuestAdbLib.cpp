@@ -1,11 +1,12 @@
 #include "../include/QuestAdbLib/QuestAdbLib.h"
-#include "Utils.h"
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
 #include <thread>
+
+using namespace std;
 
 namespace QuestAdbLib {
 
@@ -21,12 +22,12 @@ namespace QuestAdbLib {
             }
 
             running_ = true;
-            thread_ = std::thread([this, intervalSeconds]() {
+            thread_ = thread([this, intervalSeconds]() {
                 while (running_) {
                     manager_->updateDeviceList();
 
-                    std::unique_lock<std::mutex> lock(mutex_);
-                    cv_.wait_for(lock, std::chrono::seconds(intervalSeconds),
+                    unique_lock<mutex> lock(mutex_);
+                    cv_.wait_for(lock, chrono::seconds(intervalSeconds),
                                  [this] { return !running_; });
                 }
             });
@@ -47,18 +48,18 @@ namespace QuestAdbLib {
 
       private:
         QuestAdbManager* manager_;
-        std::thread thread_;
-        std::mutex mutex_;
-        std::condition_variable cv_;
-        std::atomic<bool> running_;
+        thread thread_;
+        mutex mutex_;
+        condition_variable cv_;
+        atomic<bool> running_;
     };
 
     QuestAdbManager::QuestAdbManager() : QuestAdbManager("") {}
 
-    QuestAdbManager::QuestAdbManager(const std::string& adbPath) {
-        std::string actualAdbPath = adbPath.empty() ? findAdbPath() : adbPath;
-        adbCommand_ = std::make_shared<AdbCommand>(actualAdbPath);
-        monitoringThread_ = std::make_unique<MonitoringThread>(this);
+    QuestAdbManager::QuestAdbManager(const string& adbPath) {
+        string actualAdbPath = adbPath.empty() ? findAdbPath() : adbPath;
+        adbCommand_ = make_shared<AdbCommand>(actualAdbPath);
+        monitoringThread_ = make_unique<MonitoringThread>(this);
     }
 
     QuestAdbManager::~QuestAdbManager() { stopDeviceMonitoring(); }
@@ -73,17 +74,17 @@ namespace QuestAdbLib {
         return Result<bool>::Success(initialized_);
     }
 
-    Result<std::vector<DeviceInfo>> QuestAdbManager::getConnectedDevices() {
+    Result<vector<DeviceInfo>> QuestAdbManager::getConnectedDevices() {
         if (!initialized_) {
-            return Result<std::vector<DeviceInfo>>::Error("Manager not initialized");
+            return Result<vector<DeviceInfo>>::Error("Manager not initialized");
         }
 
         auto result = adbCommand_->getDevicesWithStatus();
         if (!result.success) {
-            return Result<std::vector<DeviceInfo>>::Error(result.error);
+            return Result<vector<DeviceInfo>>::Error(result.error);
         }
 
-        std::vector<DeviceInfo> devices;
+        vector<DeviceInfo> devices;
         for (const auto& deviceInfo : result.value) {
             // Update device info with detailed information
             auto device = getDevice(deviceInfo.deviceId);
@@ -99,22 +100,22 @@ namespace QuestAdbLib {
             }
         }
 
-        return Result<std::vector<DeviceInfo>>::Success(devices);
+        return Result<vector<DeviceInfo>>::Success(devices);
     }
 
-    Result<std::shared_ptr<AdbDevice>> QuestAdbManager::getDevice(const std::string& deviceId) {
+    Result<shared_ptr<AdbDevice>> QuestAdbManager::getDevice(const string& deviceId) {
         if (!initialized_) {
-            return Result<std::shared_ptr<AdbDevice>>::Error("Manager not initialized");
+            return Result<shared_ptr<AdbDevice>>::Error("Manager not initialized");
         }
 
         auto it = devices_.find(deviceId);
         if (it == devices_.end()) {
-            auto device = std::make_shared<AdbDevice>(deviceId, adbCommand_);
+            auto device = make_shared<AdbDevice>(deviceId, adbCommand_);
             devices_[deviceId] = device;
-            return Result<std::shared_ptr<AdbDevice>>::Success(device);
+            return Result<shared_ptr<AdbDevice>>::Success(device);
         }
 
-        return Result<std::shared_ptr<AdbDevice>>::Success(it->second);
+        return Result<shared_ptr<AdbDevice>>::Success(it->second);
     }
 
     Result<bool> QuestAdbManager::refreshDeviceList() {
@@ -171,15 +172,15 @@ namespace QuestAdbLib {
                 auto rebootResult = device.value->reboot();
                 if (!rebootResult.success) {
                     allSuccess = false;
-                    std::cerr << "Failed to reboot device " << deviceInfo.deviceId << ": "
-                              << rebootResult.error << std::endl;
+                    cerr << "Failed to reboot device " << deviceInfo.deviceId << ": "
+                              << rebootResult.error << endl;
                 } else {
                     auto waitResult =
                         device.value->waitForDevice(defaultConfig_.bootTimeoutSeconds);
                     if (!waitResult.success) {
                         allSuccess = false;
-                        std::cerr << "Device " << deviceInfo.deviceId
-                                  << " failed to come back online" << std::endl;
+                        cerr << "Device " << deviceInfo.deviceId
+                                  << " failed to come back online" << endl;
                     }
                 }
             } else {
@@ -203,8 +204,8 @@ namespace QuestAdbLib {
                 auto configResult = device.value->applyConfiguration(config);
                 if (!configResult.success) {
                     allSuccess = false;
-                    std::cerr << "Failed to apply configuration to device " << deviceInfo.deviceId
-                              << ": " << configResult.error << std::endl;
+                    cerr << "Failed to apply configuration to device " << deviceInfo.deviceId
+                              << ": " << configResult.error << endl;
                 }
             } else {
                 allSuccess = false;
@@ -214,14 +215,14 @@ namespace QuestAdbLib {
         return Result<bool>::Success(allSuccess);
     }
 
-    Result<std::map<std::string, bool>>
-    QuestAdbManager::runCommandOnAll(const std::string& command) {
+    Result<map<string, bool>>
+    QuestAdbManager::runCommandOnAll(const string& command) {
         auto devicesResult = getConnectedDevices();
         if (!devicesResult.success) {
-            return Result<std::map<std::string, bool>>::Error(devicesResult.error);
+            return Result<map<string, bool>>::Error(devicesResult.error);
         }
 
-        std::map<std::string, bool> results;
+        map<string, bool> results;
         for (const auto& deviceInfo : devicesResult.value) {
             auto device = getDevice(deviceInfo.deviceId);
             if (device.success) {
@@ -232,10 +233,10 @@ namespace QuestAdbLib {
             }
         }
 
-        return Result<std::map<std::string, bool>>::Success(results);
+        return Result<map<string, bool>>::Success(results);
     }
 
-    Result<bool> QuestAdbManager::startMetricsRecordingAll(std::chrono::seconds duration) {
+    Result<bool> QuestAdbManager::startMetricsRecordingAll(chrono::seconds duration) {
         auto devicesResult = getConnectedDevices();
         if (!devicesResult.success) {
             return Result<bool>::Error(devicesResult.error);
@@ -283,9 +284,9 @@ namespace QuestAdbLib {
         return Result<bool>::Success(allSuccess);
     }
 
-    Result<std::map<std::string, std::string>>
-    QuestAdbManager::pullMetricsAll(const std::string& localDirectory) {
-        std::map<std::string, std::string> results;
+    Result<map<string, string>>
+    QuestAdbManager::pullMetricsAll(const string& localDirectory) {
+        map<string, string> results;
 
         for (const auto& [deviceId, session] : activeSessions_) {
             auto device = getDevice(deviceId);
@@ -301,7 +302,7 @@ namespace QuestAdbLib {
             }
         }
 
-        return Result<std::map<std::string, std::string>>::Success(results);
+        return Result<map<string, string>>::Success(results);
     }
 
     void QuestAdbManager::setDefaultConfiguration(const HeadsetConfig& config) {
@@ -310,24 +311,24 @@ namespace QuestAdbLib {
 
     const HeadsetConfig& QuestAdbManager::getDefaultConfiguration() const { return defaultConfig_; }
 
-    std::string QuestAdbManager::findAdbPath() {
+    string QuestAdbManager::findAdbPath() {
         AdbCommand tempCommand("");
         return tempCommand.getAdbPath();
     }
 
-    Result<bool> QuestAdbManager::isAdbAvailable(const std::string& adbPath) {
+    Result<bool> QuestAdbManager::isAdbAvailable(const string& adbPath) {
         AdbCommand tempCommand(adbPath);
         return tempCommand.isAdbAvailable();
     }
 
-    std::vector<std::string> QuestAdbManager::getPlatformToolsPaths() {
+    vector<string> QuestAdbManager::getPlatformToolsPaths() {
         AdbCommand tempCommand("");
         return tempCommand.getAdbSearchPaths();
     }
 
-    std::string QuestAdbManager::getVersion() { return "1.0.0"; }
+    string QuestAdbManager::getVersion() { return "1.0.0"; }
 
-    std::string QuestAdbManager::getBuildInfo() { return "QuestAdbLib v1.0.0 - Built with CMake"; }
+    string QuestAdbManager::getBuildInfo() { return "QuestAdbLib v1.0.0 - Built with CMake"; }
 
     void QuestAdbManager::updateDeviceList() {
         auto devicesResult = getConnectedDevices();
@@ -336,20 +337,20 @@ namespace QuestAdbLib {
         }
     }
 
-    void QuestAdbManager::emitDeviceStatusChange(const std::string& deviceId,
-                                                 const std::string& status) {
+    void QuestAdbManager::emitDeviceStatusChange(const string& deviceId,
+                                                 const string& status) {
         if (deviceStatusCallback_) {
             deviceStatusCallback_(deviceId, status);
         }
     }
 
-    void QuestAdbManager::emitDeviceListUpdate(const std::vector<DeviceInfo>& devices) {
+    void QuestAdbManager::emitDeviceListUpdate(const vector<DeviceInfo>& devices) {
         if (deviceListCallback_) {
             deviceListCallback_(devices);
         }
     }
 
-    void QuestAdbManager::emitMetricsProgress(const std::string& deviceId, double progress) {
+    void QuestAdbManager::emitMetricsProgress(const string& deviceId, double progress) {
         if (metricsProgressCallback_) {
             metricsProgressCallback_(deviceId, progress);
         }

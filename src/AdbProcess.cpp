@@ -3,13 +3,15 @@
 #include <chrono>
 #include <thread>
 
+using namespace std;
+
 namespace QuestAdbLib {
 
     AdbProcess::AdbProcess() : running_(false) {}
 
     AdbProcess::~AdbProcess() { stop(); }
 
-    bool AdbProcess::start(const std::string& command, int timeoutSeconds,
+    bool AdbProcess::start(const string& command, int timeoutSeconds,
                            ProgressCallback progressCallback) {
         if (running_) {
             return false;
@@ -20,10 +22,10 @@ namespace QuestAdbLib {
         progressCallback_ = progressCallback;
         running_ = true;
 
-        thread_ = std::thread([this]() {
+        thread_ = thread([this]() {
             auto result = Utils::executeCommand(command_, timeoutSeconds_, progressCallback_);
 
-            std::lock_guard<std::mutex> lock(mutex_);
+            lock_guard<mutex> lock(mutex_);
             result_ = result;
             running_ = false;
 
@@ -47,7 +49,7 @@ namespace QuestAdbLib {
     }
 
     bool AdbProcess::isRunning() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_guard<mutex> lock(mutex_);
         return running_;
     }
 
@@ -61,10 +63,10 @@ namespace QuestAdbLib {
             return true;
         }
 
-        auto start = std::chrono::steady_clock::now();
+        auto start = chrono::steady_clock::now();
         while (running_ &&
-               (std::chrono::steady_clock::now() - start) < std::chrono::seconds(timeoutSeconds)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+               (chrono::steady_clock::now() - start) < chrono::seconds(timeoutSeconds)) {
+            this_thread::sleep_for(chrono::milliseconds(100));
         }
 
         if (running_) {
@@ -79,12 +81,12 @@ namespace QuestAdbLib {
     }
 
     Utils::ProcessResult AdbProcess::getResult() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_guard<mutex> lock(mutex_);
         return result_;
     }
 
     void AdbProcess::setCompletionCallback(CompletionCallback callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_guard<mutex> lock(mutex_);
         completionCallback_ = callback;
     }
 
