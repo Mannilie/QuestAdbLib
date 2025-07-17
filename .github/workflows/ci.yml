@@ -84,7 +84,7 @@ jobs:
     - name: Package Artifacts
       shell: bash
       run: |
-        ARTIFACT_NAME="questadblib-${{ matrix.platform }}-${{ matrix.build_type }}"
+        ARTIFACT_NAME="questadblib-${{ matrix.platform }}"
         mkdir -p artifacts/$ARTIFACT_NAME
         
         # Copy headers
@@ -121,8 +121,8 @@ jobs:
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: questadblib-${{ matrix.platform }}-${{ matrix.build_type }}
-        path: artifacts/questadblib-${{ matrix.platform }}-${{ matrix.build_type }}*
+        name: questadblib-${{ matrix.platform }}
+        path: artifacts/questadblib-${{ matrix.platform }}*
 
   release:
     name: Create Release
