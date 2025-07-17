@@ -90,6 +90,28 @@ jobs:
         # Copy headers
         cp -r include artifacts/$ARTIFACT_NAME/
         
+        # Copy compiled libraries
+        mkdir -p artifacts/$ARTIFACT_NAME/lib
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          # Copy Windows libraries (.lib, .dll)
+          echo "Searching for Windows libraries in build directory..."
+          find build -name "*.lib" -o -name "*.dll" | grep -E "(QuestAdbLib|Release)" | while read file; do
+            echo "Copying library: $file"
+            cp "$file" artifacts/$ARTIFACT_NAME/lib/
+          done
+        else
+          # Copy Unix/Linux/macOS libraries (.so, .a, .dylib)
+          echo "Searching for Unix/Linux/macOS libraries in build directory..."
+          find build -name "*.so*" -o -name "*.a" -o -name "*.dylib" | grep -v examples | while read file; do
+            echo "Copying library: $file"
+            cp "$file" artifacts/$ARTIFACT_NAME/lib/
+          done
+        fi
+        
+        # Verify libraries were copied
+        echo "Libraries in artifact:"
+        ls -la artifacts/$ARTIFACT_NAME/lib/ || echo "No libraries found in lib directory"
+        
         # Copy platform-specific tools (if exists)
         if [ -d "platform-tools" ]; then
           cp -r platform-tools artifacts/$ARTIFACT_NAME/
