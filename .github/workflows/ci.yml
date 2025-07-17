@@ -14,6 +14,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
+      fail-fast: false
+      max-parallel: 1
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release, Debug]
@@ -57,7 +59,7 @@ jobs:
     - name: Build
       run: |
         cd build
-        cmake --build . --config ${{ matrix.build_type }} --parallel
+        cmake --build . --config ${{ matrix.build_type }}
 
     - name: Test Examples Exist
       shell: bash
